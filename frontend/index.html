@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sensor Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-dark text-light">
+    <div class="container py-4">
+        <h2 class="text-center mb-4">Sensor Data Dashboard</h2>
+
+        <!-- Tabel Data -->
+        <div class="card bg-secondary mb-4">
+            <div class="card-header">Sensor Data (Last 30 Records)</div>
+            <div class="card-body p-0">
+                <table class="table table-dark table-striped table-hover mb-0" id="data-table">
+                    <thead>
+                        <tr>
+                            <th>Sensor Type</th>
+                            <th>Value</th>
+                            <th>Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body">
+                        <tr><td colspan="3" class="text-center text-muted">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Grafik -->
+        <div class="card bg-secondary">
+            <div class="card-header">Sensor Value Chart</div>
+            <div class="card-body">
+                <canvas id="sensorChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function fetchData() {
+            const res = await fetch('/data');
+            const data = await res.json();
+            updateTable(data);
+            updateChart(data);
+        }
+
+        function updateTable(data) {
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+            data.slice(0, 30).forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${row.sensor_type}</td>
+                    <td>${row.value}</td>
+                    <td>${row.timestamp}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function updateChart(data) {
+            const ctx = document.getElementById('sensorChart');
+            const labels = data.map(d => d.timestamp);
+            const values = data.map(d => d.value);
+            const types = data.map(d => d.sensor_type);
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: 'Sensor Values',
+                        data: values,
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.3)',
+                        tension: 0.2
+                    }]
+                },
+                options: {
+                    plugins: {
+                        legend: { labels: { color: '#fff' } }
+                    },
+                    scales: {
+                        x: { ticks: { color: '#ccc' } },
+                        y: { ticks: { color: '#ccc' } }
+                    }
+                }
+            });
+        }
+
+        // Fetch data on load & refresh every 5 seconds
+        fetchData();
+        setInterval(fetchData, 5000);
+    </script>
+</body>
+</html>
